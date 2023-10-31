@@ -1,0 +1,40 @@
+version: '3.9'
+
+networks:
+  poglo-net:
+    name: net
+
+volumes:
+  db_pgdata:
+  db_data:
+
+services:
+  postgres_db:
+    container_name: poglo-db-postgres
+    image: postgres:16.0
+    networks:
+      - poglo-net
+    environment:
+      - POSTGRES_USER=poglo
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=poglo_db
+    #volumes:
+    #  - db_data:/var/lib/postgresql/data
+    #  - db_pgdata:/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+  poglo:
+    container_name: poglo-rust
+    build:
+      context: .
+      network: host
+    depends_on:
+      - postgres_db
+    networks:
+      - poglo-net
+    environment:
+      - CONN_URI=postgresql://poglo:pass@postgres_db:5432/poglo_db
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/code/src
