@@ -1,35 +1,25 @@
-use anyhow::Error;
-use sqlx::Acquire;
-use sqlx_core::any::AnyConnectionBackend;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use axum::{
-    extract::State,
-    http::{Request, StatusCode},
-    middleware::Next,
-    response::Response,
+    extract::State, http::Request, middleware::Next, response::Response,
 };
 
 use crate::web::{
-    errors::{server_error, HttpError},
-    types::with_connection::WithConnection,
-    PogloState,
+    errors::PogloError, types::with_connection::WithConnection, PogloState,
 };
 
 pub async fn with_connection<T>(
     State(state): State<PogloState>,
     mut req: Request<T>,
     next: Next<T>,
-) -> Result<Response, HttpError> {
-    let conn = state.pool.acquire().await.map_err(server_error).unwrap();
+) -> Result<Response, PogloError> {
+    let conn = state.pool.acquire().await?;
     let extensions = req.extensions_mut();
     let mutex = Arc::new(Mutex::new(conn));
 
     extensions.insert(WithConnection(Arc::clone(&mutex)));
     let response = next.run(req).await;
-    if (response.status() != 200) {}
-    // let finished_conn = mutex.lock().await.;
 
     Ok(response)
 }
@@ -38,8 +28,8 @@ pub async fn with_transactioned_connection<T>(
     State(state): State<PogloState>,
     mut req: Request<T>,
     next: Next<T>,
-) -> Result<Response, HttpError> {
-    let mut conn = state.pool.acquire().await.map_err(server_error).unwrap();
+) -> Result<Response, PogloError> {
+    let mut conn = state.pool.acquire().await?;
     sqlx::query("begin").execute(&mut *conn).await?;
     // we begin the transaction
     let extensions = req.extensions_mut();

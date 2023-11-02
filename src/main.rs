@@ -1,4 +1,5 @@
 mod cli;
+mod log_util;
 mod web;
 
 use std::net::SocketAddr;

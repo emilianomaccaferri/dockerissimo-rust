@@ -8,9 +8,7 @@ use std::{env, time::Duration};
 use axum::{middleware, routing::get, Router};
 use sqlx::postgres::{PgPoolOptions, Postgres};
 
-use crate::web::middlewares::with_connection::{
-    with_connection, with_transactioned_connection,
-};
+use crate::web::middlewares::with_connection::with_transactioned_connection;
 
 #[derive(Clone)]
 pub struct PogloState {
@@ -34,7 +32,7 @@ pub async fn build_app() -> Router {
     let state = PogloState::new().await.unwrap();
     println!("state ok");
     let app = Router::new()
-        .route("/", get(routes::root::index))
+        .route("/", get(routes::main::root::handler))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             with_transactioned_connection,
