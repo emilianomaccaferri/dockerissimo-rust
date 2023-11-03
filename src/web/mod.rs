@@ -1,22 +1,21 @@
 mod errors;
-mod middlewares;
+pub mod extractors;
+pub mod middlewares;
 mod routes;
-pub mod types;
 
 use std::{env, time::Duration};
 
-use axum::{middleware, routing::get, Router};
+use axum::{extract::FromRef, routing::post, Router};
+use log::info;
 use sqlx::postgres::{PgPoolOptions, Postgres};
 
-use crate::web::middlewares::with_connection::with_transactioned_connection;
-
-#[derive(Clone)]
+#[derive(Clone, FromRef)]
 pub struct PogloState {
     pool: sqlx::Pool<Postgres>,
 }
 impl PogloState {
     pub async fn new() -> Result<PogloState, anyhow::Error> {
-        println!("acquiring pool...");
+        info!("acquiring pool...");
 
         let pool = PgPoolOptions::new()
             .acquire_timeout(Duration::from_secs(3))
@@ -30,13 +29,9 @@ impl PogloState {
 
 pub async fn build_app() -> Router {
     let state = PogloState::new().await.unwrap();
-    println!("state ok");
+    info!("state ok");
     let app = Router::new()
-        .route("/", get(routes::main::root::handler))
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            with_transactioned_connection,
-        ))
+        .route("/", post(routes::main::root::handler))
         .with_state(state);
     app
 }

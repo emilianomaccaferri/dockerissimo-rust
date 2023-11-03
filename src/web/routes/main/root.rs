@@ -1,33 +1,39 @@
-use crate::log_util::LoggableOutcome;
-use async_trait::async_trait;
-use axum::{
-    body::HttpBody, debug_handler, extract::FromRequest, BoxError, Extension,
-    Json,
+use crate::{
+    log_util::LoggableOutcome,
+    web::{extractors::validate_body::ValidatedJson, PogloState},
 };
-use axum_extra::extract::WithRejection;
-use serde::{de::DeserializeOwned, Deserialize};
+use axum::{extract::State, http::StatusCode, Json};
+use serde::Deserialize;
 use serde_json::{json, Value};
+use sqlx::Acquire;
+use validator::Validate;
 
-use crate::web::{errors::PogloError, types::with_connection::WithConnection};
+use crate::web::errors::PogloError;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct Test {
-    number: i32,
+    #[validate(range(min = 1, max = 100))]
+    t: i32,
 }
 
-#[debug_handler]
 pub async fn handler(
-    Extension(WithConnection(conn)): Extension<WithConnection>,
-    Json(body): Json<Test>,
+    State(s): State<PogloState>, // debug handler
+    ValidatedJson(body): ValidatedJson<Test>,
 ) -> Result<Json<Value>, PogloError> {
-    let mut got_conn = conn.lock().await;
-    let mut_conn = got_conn.as_mut();
+    let mut conn = s.pool.acquire().await?;
+    let mut tx = conn.begin().await?;
 
     sqlx::query("insert into nongle values($1)")
-        .bind(body.number)
-        .execute(&mut *mut_conn)
+        .bind(body.t)
+        .execute(tx.as_mut())
         .await
         .log_err_to_error("damn")?;
+
+    sqlx::query("update nongle set number = number + 1 where number > 10")
+        .execute(tx.as_mut())
+        .await?;
+
+    tx.commit().await?;
 
     Ok(Json(
         json!({ "success": true, "message": "welcome to poglo" }),

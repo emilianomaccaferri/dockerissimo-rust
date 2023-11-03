@@ -34,7 +34,9 @@ services:
       - poglo-net
     environment:
       - CONN_URI=postgresql://poglo:pass@postgres_db:5432/poglo_db
+      - RUST_LOG=trace
     ports:
       - "3000:3000"
     volumes:
       - ./src:/code/src
+    entrypoint: ["cargo", "watch", "-x", "run -- --conf-path=2 --templates-path=4"]
