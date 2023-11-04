@@ -9,21 +9,21 @@ use axum::{
 use serde_json::json;
 use validator::{ValidationErrors, ValidationErrorsKind};
 
-pub enum PogloError {
+pub enum HttpError {
     DbError(sqlx::Error),
     ParsingError(String, StatusCode),
     InvalidFieldsError(HashMap<&'static str, ValidationErrorsKind>),
     Simple(StatusCode, String),
 }
 
-impl IntoResponse for PogloError {
+impl IntoResponse for HttpError {
     fn into_response(self) -> Response {
         let tuple_response = match self {
-            PogloError::ParsingError(text, _) => (
+            HttpError::ParsingError(text, _) => (
                 StatusCode::BAD_REQUEST,
                 Json(json!({"success": false, "error": text})),
             ),
-            PogloError::DbError(err) => {
+            HttpError::DbError(err) => {
                 // log db error
                 let mut status = StatusCode::INTERNAL_SERVER_ERROR;
                 let err_string = match err {
@@ -46,7 +46,7 @@ impl IntoResponse for PogloError {
                     Json(json!({"success": false, "error": err_string })),
                 )
             }
-            PogloError::InvalidFieldsError(err) => {
+            HttpError::InvalidFieldsError(err) => {
                 let invalid_fields: Vec<&str> =
                     err.into_keys().map(|i| i).collect();
                 (
@@ -56,7 +56,7 @@ impl IntoResponse for PogloError {
                     ),
                 )
             }
-            PogloError::Simple(code, msg) => {
+            HttpError::Simple(code, msg) => {
                 (code, Json(json!({ "success": false, "error": msg })))
             }
         };
@@ -65,19 +65,19 @@ impl IntoResponse for PogloError {
     }
 }
 
-impl From<sqlx::Error> for PogloError {
+impl From<sqlx::Error> for HttpError {
     fn from(err: sqlx::Error) -> Self {
-        PogloError::DbError(err)
+        HttpError::DbError(err)
     }
 }
 
-impl From<JsonRejection> for PogloError {
+impl From<JsonRejection> for HttpError {
     fn from(err: JsonRejection) -> Self {
-        PogloError::ParsingError("invalid_body".to_owned(), err.status())
+        HttpError::ParsingError("invalid_body".to_owned(), err.status())
     }
 }
 
-impl From<ValidationErrors> for PogloError {
+impl From<ValidationErrors> for HttpError {
     fn from(err: ValidationErrors) -> Self {
         Self::InvalidFieldsError(err.into_errors())
     }

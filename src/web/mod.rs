@@ -10,11 +10,11 @@ use log::info;
 use sqlx::postgres::{PgPoolOptions, Postgres};
 
 #[derive(Clone, FromRef)]
-pub struct PogloState {
+pub struct AppState {
     pool: sqlx::Pool<Postgres>,
 }
-impl PogloState {
-    pub async fn new() -> Result<PogloState, anyhow::Error> {
+impl AppState {
+    pub async fn new() -> Result<AppState, anyhow::Error> {
         info!("acquiring pool...");
 
         let pool = PgPoolOptions::new()
@@ -23,12 +23,12 @@ impl PogloState {
             .connect(&env::var("CONN_URI").unwrap())
             .await?;
 
-        Ok(PogloState { pool })
+        Ok(AppState { pool })
     }
 }
 
 pub async fn build_app() -> Router {
-    let state = PogloState::new().await.unwrap();
+    let state = AppState::new().await.unwrap();
     info!("state ok");
     let app = Router::new()
         .route("/", post(routes::main::root::handler))

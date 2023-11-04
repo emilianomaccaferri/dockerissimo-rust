@@ -6,7 +6,7 @@ use axum::{
 };
 use validator::Validate;
 
-use crate::web::errors::PogloError;
+use crate::web::errors::HttpError;
 
 pub struct ValidatedJson<T>(pub T);
 
@@ -18,7 +18,7 @@ where
     T: Validate,
     B: Send + 'static,
 {
-    type Rejection = PogloError;
+    type Rejection = HttpError;
 
     async fn from_request(
         req: Request<B>,
@@ -30,7 +30,7 @@ where
         let Json(j) = axum::Json::<T>::from_request(rebuilt_request, state)
             .await
             .map_err(|_| {
-                PogloError::ParsingError(
+                HttpError::ParsingError(
                     "invalid_body".to_owned(),
                     StatusCode::BAD_REQUEST,
                 )

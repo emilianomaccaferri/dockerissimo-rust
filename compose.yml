@@ -1,8 +1,8 @@
 version: '3.9'
 
 networks:
-  poglo-net:
-    name: net
+  dockerissimo-net:
+    name: dockerissimo-net
 
 volumes:
   db_pgdata:
@@ -10,30 +10,30 @@ volumes:
 
 services:
   postgres_db:
-    container_name: poglo-db-postgres
+    container_name: dockerissimo-postgres
     image: postgres:16.0
     networks:
-      - poglo-net
+      - dockerissimo-net
     environment:
-      - POSTGRES_USER=poglo
+      - POSTGRES_USER=dockerissimo-rust
       - POSTGRES_PASSWORD=pass
-      - POSTGRES_DB=poglo_db
+      - POSTGRES_DB=fantastic_db
     #volumes:
     #  - db_data:/var/lib/postgresql/data
     #  - db_pgdata:/var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
-  poglo:
-    container_name: poglo-rust
+  app:
+    container_name: dockerissimo-rust
     build:
       context: .
       network: host
     depends_on:
       - postgres_db
     networks:
-      - poglo-net
+      - dockerissimo-net
     environment:
-      - CONN_URI=postgresql://poglo:pass@postgres_db:5432/poglo_db
+      - CONN_URI=postgresql://dockerissimo-rust:pass@postgres_db:5432/fantastic_db
       - RUST_LOG=trace
     ports:
       - "3000:3000"
