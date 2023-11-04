@@ -1,2 +1,4 @@
-# poglo
-something i can post data onto for my ci/cd pipelines
+# dockerissimo rust
+a template i use for my rust webapps
+<br>
+just clone the repo and run `docker compose up`
