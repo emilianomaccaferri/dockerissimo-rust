@@ -15,7 +15,7 @@ services:
     networks:
       - dockerissimo-net
     environment:
-      - POSTGRES_USER=dockerissimo-rust
+      - POSTGRES_USER=dockerissimo_rust
       - POSTGRES_PASSWORD=pass
       - POSTGRES_DB=fantastic_db
     #volumes:
@@ -33,7 +33,7 @@ services:
     networks:
       - dockerissimo-net
     environment:
-      - CONN_URI=postgresql://dockerissimo-rust:pass@postgres_db:5432/fantastic_db
+      - CONN_URI=postgresql://dockerissimo_rust:pass@postgres_db:5432/fantastic_db
       - RUST_LOG=trace
     ports:
       - "3000:3000"
